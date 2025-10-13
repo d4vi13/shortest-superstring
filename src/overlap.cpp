@@ -60,29 +60,19 @@ kmp_calculate_overlap (std::string a, std::string b)
   return p.back(); 
 }
 
-uint32_t**
+std::vector<std::vector<uint32_t>>
 compute_overlap_matrix (std::vector<std::string> strs)
 {
-  uint32_t **overlap;
+  std::vector<std::vector<uint32_t>> overlap(strs.size(), std::vector<uint32_t>(strs.size()));
 
-  overlap = (uint32_t **) malloc (strs.size() * sizeof *overlap);
-  if (!overlap)
-    return overlap;
-
-  for (uint32_t i = 0; i < strs.size(); i++)
-    {
-      overlap[i] = (uint32_t *) malloc (strs.size() * sizeof **overlap);
-      if (!overlap[i])
-        return (uint32_t **) NULL;
-    }
-  
   for (uint32_t i = 0; i < strs.size(); i++)
     {
       for (uint32_t j = 0; j < strs.size(); j++)
         {
           if (i == j)
-            continue;
-          overlap[i][j] = calculate_overlap(strs[i], strs[j]);
+            overlap[i][j] = strs[i].size();
+          else
+            overlap[i][j] = calculate_overlap(strs[i], strs[j]);
         }
     }
 
