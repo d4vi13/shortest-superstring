@@ -37,7 +37,7 @@ prefix_function (std::string a)
   for (uint32_t i = 1; i < a.size(); i++)
   {
     int32_t j = prefixes[i-1];
-    for (; j >= 0 ; j--)
+    for (; j >= 0 ; j = prefixes[j-1])
       {
         if (a[j] == a[i])
           {
