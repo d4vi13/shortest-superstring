@@ -18,22 +18,25 @@ load_strings (std::istream& in, std::vector<std::string>& strs)
 void
 compute_shortest_superstring (std::vector<std::string> strs, uint32_t  **overlaps)
 {
-  std::vector<bool> used(strs.size(), false);
+  std::vector<bool> used_as_prefix(strs.size(), false);
+  std::vector<bool> used_as_suffix(strs.size(), false);
   uint32_t i_max, j_max, max, j_tmp;
   i_max = 0;
   j_max = 0;
   max = 0;
 
+  auto cmp = [](const triple& a, const triple& b) {
+    return std::get<0>(a) < std::get<0>(b);
+  };
+
+  std::priority_queue<triple, std::vector<triple>, decltype(cmp)> pq(cmp);
   for (uint32_t i = 0; i < strs.size(); i++)
     for (uint32_t j = 0; j < strs.size(); j++)
-      if (overlaps[i][j] >= max)
-        {
-          i_max = i;
-          j_max = j;
-          max = overlaps[i][j];
-        }
+      pq.push({matrix[i][j], i, j});
 
+  
 
+  
   std::cout << strs[i_max];
   used[i_max] = true;
   for (uint32_t i = 0; i < strs.size(); i++)

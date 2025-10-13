@@ -89,4 +89,3 @@ compute_overlap_matrix (std::vector<std::string> strs)
   return overlap;
 }
 
-
