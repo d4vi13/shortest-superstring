@@ -1,7 +1,7 @@
 #include "overlap.h"
 
 static inline uint32_t
-old_calculate_overlap (std::string a, std::string b)
+calculate_overlap (std::string a, std::string b)
 {
   uint32_t count = 0;
   for (uint32_t i = 1; i < a.size(); i++) 
@@ -53,7 +53,7 @@ prefix_function (std::string a)
 }
 
 static inline uint32_t
-calculate_overlap (std::string a, std::string b)
+kmp_calculate_overlap (std::string a, std::string b)
 {
   // adds space for a case like a=aba b=bab
   std::vector<uint32_t> p = prefix_function (b + " " +a);

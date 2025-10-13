@@ -3,10 +3,11 @@
 
 #include <iostream>
 #include <vector>
+#include <queue>
+#include <tuple>
 #include <string>
 #include <fstream>
 #include <cstdint>
 
-using triple = std::tuple<uint32_t, uint32_t, uint32_t>;
 
 #endif

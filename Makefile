@@ -4,7 +4,7 @@ CFLAGS := -O2 -Wall -Wextra -std=c++11
 
 # Automatically find all .cpp files in the current directory
 SRC := $(wildcard src/*.cpp)
-TEST := tests/test 
+TEST := tests/abc 
 
 # Name of the output binary
 TARGET := shsup

@@ -15,55 +15,72 @@ load_strings (std::istream& in, std::vector<std::string>& strs)
   return;
 }
 
-void
+std::string
 compute_shortest_superstring (std::vector<std::string> strs, uint32_t  **overlaps)
 {
   std::vector<bool> used_as_prefix(strs.size(), false);
   std::vector<bool> used_as_suffix(strs.size(), false);
-  uint32_t i_max, j_max, max, j_tmp;
-  i_max = 0;
-  j_max = 0;
-  max = 0;
+  uint32_t total_used, i, j, overlap, *sequence;
+  std::tuple<uint32_t, uint32_t, uint32_t> t;
+  std::string tmp = "";
 
-  auto cmp = [](const triple& a, const triple& b) {
-    return std::get<0>(a) < std::get<0>(b);
-  };
+  sequence = (uint32_t *) calloc (1, strs.size() * sizeof *sequence); 
+  if (!sequence)
+    return tmp;
 
-  std::priority_queue<triple, std::vector<triple>, decltype(cmp)> pq(cmp);
+  std::cout << "Starting to compute superstring" << std::endl;
+  total_used = 0;
+  i = 0;
+
+  std::priority_queue<std::tuple<uint32_t, uint32_t, uint32_t>> pq;
   for (uint32_t i = 0; i < strs.size(); i++)
     for (uint32_t j = 0; j < strs.size(); j++)
-      pq.push({matrix[i][j], i, j});
-
+      if (i != j)
+      {
+        std::cout << overlaps[i][j] << " " << strs[i] << " " << i << " " << strs[j] << " " << j << std::endl;
+        pq.push({overlaps[i][j], i, j});
+      }
+  std::cout << "map above" << std::endl;
   
-
-  
-  std::cout << strs[i_max];
-  used[i_max] = true;
-  for (uint32_t i = 0; i < strs.size(); i++)
+  // assemble string
+  while (total_used < (strs.size() - 1))
     {
-      used[j_max] = true;
-      std::cout << strs[j_max].substr(overlaps[i_max][j_max], strs[j_max].size() - overlaps[i_max][j_max]);
+      t = pq.top(); 
+      i = std::get<1>(t); 
+      j = std::get<2>(t); 
+      overlap = std::get<0>(t);
 
-      max = 0;
-      j_tmp = 0;
-      for (uint32_t j = 0; j < strs.size(); j++)
+      if (!used_as_prefix[i] && !used_as_suffix[j])
         {
-          if (used[j])
-            continue;
-          if (overlaps[j_max][j] > max)
-            {
-              max = overlaps[j_max][j];
-              j_tmp = j; 
-            }
+          used_as_prefix[i] = true;
+          used_as_suffix[j] = true;
+          
+          sequence[i] = j;
+          /*
+          tmp = strs[i] + strs[j].substr(overlap , strs[j].size() - overlap);
+         
+          std::cout << strs[i] << std::endl;
+          std::cout << strs[j] << std::endl;
+          std::cout << tmp << " " << i << " " << j << " " << overlap << " " << total_used << std::endl;
+
+          strs[i] = std::move(tmp); // move ownership of buffer 
+          strs[j] = strs[i]; // make a copy
+                             // */
+          
+          total_used += 1;
         }
 
-      i_max = j_max;
-      j_max = j_tmp;
-    }
+      pq.pop();
+    } 
 
-  std::cout << std::endl;
-
-  return;
+  for (int i = 0; i < strs.size(); i++)
+  {
+    //std::cout << used_as_prefix[i] << " " << used_as_suffix[i] << std::endl;
+    std::cout << i << " " <<  sequence[i] << " " << overlaps[i][sequence[i]] << std::endl;
+    //std::cout << strs[i] << " " << used_as_prefix[i] << " " << used_as_suffix[i] << std::endl;
+  }
+  std::cout << strs[i] << std::endl;
+  return strs[i];
 }
 
 int 
@@ -88,6 +105,7 @@ main(int argc, char **argv)
   overlaps = compute_overlap_matrix(strs);
   compute_shortest_superstring (strs, overlaps);
 
+  /*
   for (uint32_t i = 0; i < strs.size(); i++) 
     {
       for (uint32_t j = 0; j < strs.size(); j++)
@@ -95,5 +113,6 @@ main(int argc, char **argv)
       std::cout << std::endl;
     }
 
+    */
   return 0;
 }
