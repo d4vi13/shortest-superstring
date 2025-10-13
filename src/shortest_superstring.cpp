@@ -51,16 +51,19 @@ compute_shortest_superstring (std::vector<std::string> strs, std::vector<std::ve
       used[j] = true;
 
       tmp = strs[i] + strs[j].substr(overlap , strs[j].size() - overlap);
-      strs.push_back(tmp);
-      overlaps.push_back(overlaps[j]);
+      strs.push_back(std::move(tmp));
+      overlaps.push_back(std::move(overlaps[j]));
       for (uint32_t k = 0; k < strs.size() - 1; k++) 
-      {
-        overlaps[k].push_back(overlaps[k][i]);
-        pq.push({overlaps[strs.size() - 1][k], strs.size() - 1, k});
-        pq.push({overlaps[k][i], k, i});
-      }
+        {
+          if (!used[k])
+            {
+              overlaps[k].push_back(overlaps[k][i]);
+              pq.push({overlaps[k][i], k, i});
+            }
+          pq.push({overlaps[strs.size() - 1][k], strs.size() - 1, k});
+        }
 
-      overlaps[strs.size()].push_back(0);
+      overlaps[strs.size() - 1].push_back(0);
       total_used += 2;
 
       used.push_back(false);
