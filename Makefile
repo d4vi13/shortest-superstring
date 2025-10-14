@@ -1,6 +1,6 @@
 # Compiler and flags
 CC := g++
-CFLAGS := -O2 -Wall -Wextra -std=c++11
+CFLAGS := -O3 -Wall -Wextra -std=c++11 -fopenmp
 
 # Automatically find all .cpp files in the current directory
 SRC := $(wildcard src/*.cpp)

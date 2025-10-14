@@ -1,7 +1,7 @@
 #include "overlap.h"
 
-static inline uint32_t
-calculate_overlap (std::string a, std::string b)
+uint32_t
+old_calculate_overlap (std::string a, std::string b)
 {
   uint32_t count = 0;
   for (uint32_t i = 1; i < a.size(); i++) 
@@ -31,32 +31,27 @@ found:
 static inline std::vector<uint32_t> 
 prefix_function (std::string a)
 {
-  std::vector<uint32_t> prefixes;
-  prefixes.push_back(0);
+  std::vector<uint32_t> prefixes(a.size(), 0);
 
   for (uint32_t i = 1; i < a.size(); i++)
   {
-    int32_t j = prefixes[i-1];
-    for (; j >= 0 ; j = prefixes[j-1])
-      {
-        if (a[j] == a[i])
-          {
-            prefixes.push_back(j + 1);
-            break;
-          }
-      }
-    if (j < 0)
-      prefixes.push_back(0);
+    uint32_t j = prefixes[i-1];
+    while ((j > 0) && (a[i] != a[j]))
+        j = prefixes[j-1];
+
+    if (a[i] == a[j])
+        j++;
+    prefixes[i] = j;
   }
 
   return prefixes;
 }
 
-static inline uint32_t
-kmp_calculate_overlap (std::string a, std::string b)
+uint32_t
+calculate_overlap (std::string a, std::string b)
 {
   // adds space for a case like a=aba b=bab
-  std::vector<uint32_t> p = prefix_function (b + " " +a);
+  std::vector<uint32_t> p = prefix_function (b + "#" +a);
   return p.back(); 
 }
 
@@ -65,6 +60,7 @@ compute_overlap_matrix (std::vector<std::string> strs)
 {
   std::vector<std::vector<uint32_t>> overlap(strs.size(), std::vector<uint32_t>(strs.size()));
 
+  #pragma omp parallel for schedule(dynamic)
   for (uint32_t i = 0; i < strs.size(); i++)
     {
       for (uint32_t j = 0; j < strs.size(); j++)
