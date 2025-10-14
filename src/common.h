@@ -12,4 +12,6 @@
 
 #define NTHREADS 16
 
+extern double ptotal;
+
 #endif
