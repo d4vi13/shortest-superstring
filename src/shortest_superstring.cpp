@@ -16,7 +16,7 @@ load_strings (std::istream& in, std::vector<std::string>& strs)
 }
 
 std::string
-compute_shortest_superstring (std::vector<std::string> strs, std::vector<std::vector<uint32_t>> overlaps)
+old_compute_shortest_superstring (std::vector<std::string> strs, std::vector<std::vector<uint32_t>> overlaps)
 {
   std::vector<bool> used(strs.size(), false);
   uint32_t total_used, i, j, overlap, *sequence;
@@ -78,7 +78,60 @@ compute_shortest_superstring (std::vector<std::string> strs, std::vector<std::ve
   return strs.back();
 }
 
-int 
+std::string
+compute_shortest_superstring(std::vector<std::string> &strs, std::vector<std::vector<uint32_t>> &overlaps) {
+  size_t n = strs.size();
+  while (strs.size() > 1) {
+    n = strs.size();
+
+    // find best pair (i,j) with max overlaps[i][j], i != j
+    size_t best_i = 0, best_j = 1;
+    uint32_t best_ov = 0;
+    for (size_t i = 0; i < n; ++i) {
+      for (size_t j = 0; j < n; ++j) {
+        if (i == j) continue;
+        uint32_t ov = overlaps[i][j];
+        if (ov > best_ov) {
+          best_ov = ov; 
+          best_i = i;
+          best_j = j;
+        }
+      }   
+    }   
+
+    // merge best_i and best_j into best_i
+    std::string merged = strs[best_i] + strs[best_j].substr(best_ov);
+    strs[best_i] = std::move(merged);
+
+    // recompute overlaps for row best_i and column best_i against all k
+    // keep using current indices; we'll erase row/col best_j afterwards
+    for (size_t k = 0; k < n; ++k) {
+      if (k == best_i) {
+        overlaps[best_i][best_i] = 0;
+        continue;
+      }   
+      overlaps[best_i][k] = calculate_overlap(strs[best_i], strs[k]);
+      overlaps[k][best_i] = calculate_overlap(strs[k], strs[best_i]);
+    }   
+
+    // erase row best_j
+    overlaps.erase(overlaps.begin() + best_j);
+    // erase column best_j from every remaining row
+    for (size_t r = 0; r + 0 < overlaps.size(); ++r) {
+      overlaps[r].erase(overlaps[r].begin() + best_j);
+    }   
+
+    // erase string best_j
+    strs.erase(strs.begin() + best_j);
+  }                                                                                                                                                                                                                                                                                                                          
+
+  std::cout << strs.front() << std::endl;
+  std::cout << strs.front().size() << std::endl;
+  return strs.front();
+}
+
+
+  int 
 main(int argc, char **argv) 
 {
   std::vector<std::string> strs;
