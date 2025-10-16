@@ -8,6 +8,10 @@
 #include <string>
 #include <fstream>
 #include <cstdint>
+#include <omp.h>
 
+#define NTHREADS 16
+
+extern double ptotal;
 
 #endif
