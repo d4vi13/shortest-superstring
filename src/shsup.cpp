@@ -3,7 +3,6 @@
 std::string
 compute_shortest_superstring(std::vector<std::string> &strs, std::vector<std::vector<uint32_t>> &overlaps) {
   uint32_t best_i, best_j, best_ov, start, end, n = strs.size();
-  std::string merged;
   while (strs.size() > 1) {
     n = strs.size();
     best_i = 0, best_j = 1,best_ov = 0;
@@ -49,8 +48,7 @@ compute_shortest_superstring(std::vector<std::string> &strs, std::vector<std::ve
     end = omp_get_wtime();
     ptotal += end - start;
 
-    merged = strs[best_i] + strs[best_j].substr(best_ov);
-    strs[best_i] = std::move(merged);
+    strs[best_i] = strs[best_i] + strs[best_j].substr(best_ov);
 
     start = omp_get_wtime();
     #pragma omp parallel for schedule(dynamic)
