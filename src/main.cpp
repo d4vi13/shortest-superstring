@@ -57,8 +57,8 @@ main(int argc, char **argv)
 
   total = end - start;
 
-  //std::cout << "Resposta: " << res << std::endl;
-  //std::cout << "Tamnho: " << res.size() << std::endl;
+  std::cout << "Resposta: " << res << std::endl;
+  std::cout << "Tamnho: " << res.size() << std::endl;
   std::cout << size << "," << total << "," << total - ptotal << "," << ptotal << std::endl;
 
   return 0;
