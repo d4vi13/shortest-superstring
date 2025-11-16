@@ -5,6 +5,7 @@
 #include "overlap.h"
 
 std::string
-compute_shortest_superstring (std::vector<std::string> &strs, std::vector<std::vector<uint32_t>> &overlaps);
+compute_shortest_superstring (std::vector<std::string> &strs,
+                              std::vector<std::vector<uint32_t> > &overlaps);
 
 #endif

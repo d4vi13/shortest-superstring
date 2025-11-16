@@ -3,10 +3,10 @@
 
 #include "common.h"
 
-std::vector<std::vector<uint32_t>>
-compute_overlap_matrix (std::vector<std::string> strs);
+uint32_t calculate_overlap (std::string a, std::string b);
 
-uint32_t
-calculate_overlap (std::string a, std::string b);
+std::map<uint32_t, std::map<uint32_t, uint32_t> >
+compute_overlap_matrix (std::vector<std::string> strs,
+                        std::set<uint32_t> working_set);
 
 #endif
