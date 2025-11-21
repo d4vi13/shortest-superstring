@@ -2,7 +2,7 @@
 
 std::string
 compute_shortest_superstring (std::vector<std::string> &strs,
-                              std::vector<std::vector<uint32_t> > &overlaps)
+                              std::map<uint32_t, std::map<uint32_t, uint32_t>> &overlaps)
 {
   uint32_t best_i, best_j, best_ov, start, end, n = strs.size ();
   while (strs.size () > 1)

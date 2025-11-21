@@ -1,7 +1,6 @@
 #include "common.h"
 #include "overlap.h"
 #include "shsup.h"
-
 #define GET_THREAD_NUM_SCRIPT "./get_num_of_threads.pl hosts.txt"
 
 double ptotal = 0;
@@ -151,19 +150,21 @@ main (int argc, char **argv)
     }
 
   std::cout << "Working Set Size: " << ctrl.working_set.size () << std::endl;
+  /*
   for (auto it = ctrl.working_set.begin (); it != ctrl.working_set.end ();
        it++)
     {
       std::cout << *it << " ";
     }
   std::cout << std::endl;
+   */
 
   MPI_Finalize ();
   return 0;
 
   start = omp_get_wtime ();
-  auto overlaps = compute_overlap_matrix (ctrl.strs);
-  res = compute_shortest_superstring (ctrl.strs, overlaps);
+  auto overlaps = compute_overlap_matrix (ctrl.strs, ctrl.working_set);
+//  res = compute_shortest_superstring (ctrl.strs, overlaps);
   end = omp_get_wtime ();
 
   total = end - start;

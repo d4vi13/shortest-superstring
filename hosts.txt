@@ -1,5 +1,5 @@
 gojo threads=8
 megumi threads=4
-yuji threads=4
 roteador threads=2
 bocchi threads=4
+melchior threads=12
