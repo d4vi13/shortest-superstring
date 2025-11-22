@@ -159,22 +159,22 @@ main (int argc, char **argv)
   std::cout << std::endl;
    */
 
-  MPI_Finalize ();
-  return 0;
-
   start = omp_get_wtime ();
   ctrl.overlaps = compute_overlap_matrix (ctrl.strs, ctrl.working_set);
-//  res = compute_shortest_superstring (ctrl.strs, overlaps);
+  res = compute_shortest_superstring (ctrl.strs, ctrl.overlaps);
+  if (res.empty())
+    return 0;
+
   end = omp_get_wtime ();
 
   total = end - start;
 
-  MPI_Finalize ();
 
   std::cout << "Resposta: " << res << std::endl;
   std::cout << "Tamnho: " << res.size () << std::endl;
   std::cout << size << "," << total << "," << total - ptotal << "," << ptotal
             << std::endl;
 
+  MPI_Finalize ();
   return 0;
 }

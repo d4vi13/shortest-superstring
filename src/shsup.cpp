@@ -151,5 +151,5 @@ compute_shortest_superstring (
 
   if ((strs.size() == 1) && ws.size())
     return strs[ws.front ()];
-  return NULL;  
+  return std::string();  
 }
