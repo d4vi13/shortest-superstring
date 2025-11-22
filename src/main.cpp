@@ -8,9 +8,9 @@ struct ctrl ctrl;
 uint32_t size;
 
 void
-load_strings (std::istream &in, std::unordered_map<uint32_t, std::string> &strs)
+load_strings (std::istream &in, std::vector<std::string> &strs)
 {
-  uint32_t i, j = 0;
+  uint32_t i;
   std::string aux;
   getline (in, aux);
 
@@ -21,7 +21,7 @@ load_strings (std::istream &in, std::unordered_map<uint32_t, std::string> &strs)
       getline (in, aux);
       if (aux.empty ())
         break;
-      strs[j++] = aux;
+      strs.push_back(aux);
     }
 
   return;
@@ -76,8 +76,8 @@ get_working_set ()
       working_set_min_size = ctrl.strs.size () / total;
       leftover = ctrl.strs.size () % total;
 
-      for (int i = 0; i < (working_set_min_size * threads[0] + leftover); i++)
-        ctrl.working_set.insert (i);
+      ctrl.ws_start = 0;
+      ctrl.ws_end = working_set_min_size * threads[0] + leftover;
 
       if (!working_set_min_size)
         {
@@ -86,7 +86,7 @@ get_working_set ()
             MPI_Send(&value, 1, MPI_INT, r, 0, MPI_COMM_WORLD);
             MPI_Send(&value, 1, MPI_INT, r, 0, MPI_COMM_WORLD);
           }
-          return 1;
+          goto calc_ws_size;
         }
 
       start = working_set_min_size * threads[0] + leftover;
@@ -106,17 +106,18 @@ get_working_set ()
       break;
     default:
       MPI_Send (&ctrl.nproc, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-      MPI_Recv (&start, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD,
-                &ctrl.status);
-      MPI_Recv (&end, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD,
-                &ctrl.status);
 
-      for (int i = start; i < end; i++)
-        ctrl.working_set.insert (i);
+      MPI_Recv (&ctrl.ws_start, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD,
+                &ctrl.status);
+      MPI_Recv (&ctrl.ws_end, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD,
+                &ctrl.status);
 
       break;
     }
 
+calc_ws_size:
+
+      ctrl.ws_size = ctrl.ws_end - ctrl.ws_start;
   return 1;
 }
 
@@ -149,9 +150,10 @@ main (int argc, char **argv)
       in = &file;
     }
 
+  
+  std::cout << "Loading strings..." << std::endl;
   load_strings (*in, ctrl.strs);
-
-  std::cout << ctrl.strs.size () << std::endl;
+  std::cout << "Number of strings loaded" << ctrl.strs.size () << std::endl;
 
   if (!get_working_set ())
     {
@@ -159,34 +161,34 @@ main (int argc, char **argv)
       return 0;
     }
 
-  std::cout << "Working Set Size: " << ctrl.working_set.size () << std::endl;
- /* 
-  for (auto it = ctrl.working_set.begin (); it != ctrl.working_set.end ();
-       it++)
-    {
-      std::cout << *it << "("<< ctrl.strs[*it] << ") ";
-    }
-    */
-
-start = omp_get_wtime ();
+  std::cout << "Working Set Size: " << ctrl.ws_size << "End: " << ctrl.ws_end <<std::endl;
+  
+  /*
+  for (auto i = 0; i < ctrl.ws_size; i++)
+    std::cout << ctrl.ws_start + i << "("<< ctrl.strs[ctrl.ws_start + i] << ") ";
+  std::cout << std::endl;
+  */
+ 
+  start = omp_get_wtime ();
   std::cout << "Starting to compute overlap matrix" << std::endl;
-  ctrl.overlaps = compute_overlap_matrix (ctrl.strs, ctrl.working_set);
+  ctrl.overlaps = compute_overlap_matrix (ctrl.strs);
 
-  for (auto it = ctrl.working_set.begin(); it != ctrl.working_set.end(); it ++)
+  
+  for (auto i = 0; i < ctrl.ws_size; i++)
   {
     for (uint32_t j = 0; j  < ctrl.strs.size(); j++)
-      std::cout << ctrl.overlaps[*it][j] << " ";
+      std::cout << ctrl.overlaps[i][j] << " ";
     std::cout << std::endl;
   }
   std::cout << std::endl;
   std::cout << "----------" << std::endl;
  
  
-    std::cout << "Starting to compute shortest superstring" << std::endl;
-  res = compute_shortest_superstring (ctrl.strs, ctrl.overlaps);
-  if (res.empty())
-    goto finish;
+  
 
+  std::cout << "Starting to compute shortest superstring" << std::endl;
+  res = compute_shortest_superstring ();
+ 
   end = omp_get_wtime ();
 
   total = end - start;

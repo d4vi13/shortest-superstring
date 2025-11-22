@@ -31,10 +31,14 @@ struct ctrl
   int rank;
   int nproc;
   int cluster_size;
-  int working_set_size;
+
+  int ws_start;
+  int ws_end;
+  int ws_size;
+  std::vector<std::string> strs;
+
   std::set<uint32_t> working_set;
-  std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>> overlaps;
-  std::unordered_map<uint32_t, std::string> strs;
+  std::vector<std::vector<uint32_t>> overlaps;
   MPI_Status status;
 };
 

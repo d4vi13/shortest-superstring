@@ -1,14 +1,14 @@
 #include "shsup.h"
 
 void
-find_max_overlap (std::vector<uint32_t> &ws, uint32_t *pbest_i,
+find_max_overlap (uint32_t *pbest_i,
     uint32_t *pbest_j, uint32_t *pbest_ov)
 {
   uint32_t best_i, best_j, best_ov;
   uint32_t n = ctrl.strs.size ();
 
   std::cout << "finding max overlap" << std::endl;
-  if (ws.empty()) {
+  if (ctrl.ws_size == 0) {
   std::cout << "ws is empty" << std::endl;
     *pbest_i = -1;
     *pbest_j = -1;
@@ -18,19 +18,18 @@ find_max_overlap (std::vector<uint32_t> &ws, uint32_t *pbest_i,
 
 #pragma omp parallel 
   { 
-
   uint32_t local_i = 0, local_j = 1, local_ov = 0;
 #pragma omp for nowait
-  for (auto i = ws.begin (); i != ws.end (); i++)
+  for (auto i = 0; i < ctrl.ws_size; i++)
   {
     for (uint32_t j = 0; j < n; j++)
     {
-      if (*i == j)
+      if ((ctrl.ws_start + i) == j)
         continue;
-      if (ctrl.overlaps[*i][j] > local_ov)
+      if (ctrl.overlaps[i][j] > local_ov)
       {
-        local_ov = ctrl.overlaps[*i][j];
-        local_i = *i;
+        local_ov = ctrl.overlaps[i][j];
+        local_i = i;
         local_j = j;
       }
     }
@@ -64,16 +63,22 @@ find_max_overlap (std::vector<uint32_t> &ws, uint32_t *pbest_i,
     }
   }
 }
+
   *pbest_i = best_i;
   *pbest_j = best_j;
   *pbest_ov = best_ov;
 }
 
+// after this the best_* varibles will hold the reduce versions, note that i in 
+// this contexts points to string not a postion in the matrix
 void
 find_max_overlap_across_nodes (uint32_t *best_i,
                   uint32_t *best_j, uint32_t *best_ov)
 {
   uint32_t local_i = *best_i, local_j = *best_j, local_ov = *best_ov;
+
+  if (ctrl.ws_size)
+    local_i += ctrl.ws_start;
 
   MPI_Allreduce(&local_ov, best_ov, 1, MPI_UINT32_T, MPI_MAX, MPI_COMM_WORLD);
 
@@ -90,15 +95,10 @@ find_max_overlap_across_nodes (uint32_t *best_i,
   MPI_Allreduce(&local_j, best_j, 1, MPI_UINT32_T, MPI_MIN, MPI_COMM_WORLD);
 }
 
-
+/*
 std::string
-compute_shortest_superstring (
-    std::unordered_map<uint32_t, std::string> &strs,
-    std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t> > &overlaps)
-{
-  uint32_t best_i, best_j, best_ov, start, end;
-  bool won;
-  std::vector<uint32_t> ws (ctrl.working_set.begin (), ctrl.working_set.end ());
+compute_shortest_superstring () {
+  uint32_t best_i, best_j, best_ov, start, end; bool won;
 
   while (strs.size () > 1) // think about how to stop
     {
@@ -112,6 +112,8 @@ compute_shortest_superstring (
       std:: cout << "best_i " << best_i << " " << ctrl.strs[best_i] ;
       std:: cout << " best_j " << best_j <<  " " << ctrl.strs[best_j] ;
       std:: cout << " best_ov " << best_ov << std::endl;
+
+      break;
 
       uint32_t backup = best_i;
       find_max_overlap_across_nodes (&best_i, &best_j, &best_ov);
@@ -171,4 +173,86 @@ compute_shortest_superstring (
   if ((strs.size() == 1) && ws.size())
     return strs[ws.front ()];
   return std::string();  
+}
+*/
+
+std::string
+compute_shortest_superstring() {
+  uint32_t best_i, best_j, best_ov, start, end, n = ctrl.strs.size();
+  bool won;
+
+  while (ctrl.strs.size() > 1) {
+    n = ctrl.strs.size();
+    best_i = 0, best_j = 1,best_ov = 0;
+
+  for (auto i = 0; i < ctrl.ws_size; i++)
+  {
+    for (uint32_t j = 0; j  < ctrl.strs.size(); j++)
+      std::cout << ctrl.overlaps[i][j] << " ";
+    std::cout << std::endl;
+  }
+  std::cout << std::endl;
+  std::cout << "----------" << std::endl;
+ 
+
+    // find max overlap 
+    find_max_overlap (&best_i, &best_j, &best_ov);
+
+    if (ctrl.ws_size) {
+      std:: cout << "best_i " << best_i << " " << ctrl.strs[best_i] ;
+      std:: cout << " best_j " << best_j <<  " " << ctrl.strs[best_j] ;
+      std:: cout << " best_ov " << best_ov << std::endl;
+    }
+
+    uint32_t backup = best_i;
+    find_max_overlap_across_nodes (&best_i, &best_j, &best_ov);
+    if (true) {
+      std:: cout << "best_i " << best_i << " " << ctrl.strs[best_i];
+      std:: cout << " best_j " << best_j <<  " " << ctrl.strs[best_j];
+      std:: cout << " best_ov " << best_ov << std::endl;
+    }
+
+    // check if this thread won and set won to true
+    won = (backup + ctrl.ws_start) == best_i;
+
+    ctrl.strs[best_i] = ctrl.strs[best_i] + ctrl.strs[best_j].substr(best_ov);
+
+    // recompute the line if it belongs to the working set
+    if (won) {
+    #pragma omp parallel for schedule(dynamic)
+      for (uint32_t k = 0; k < n; k++) {
+        if (k == best_i) continue;
+        ctrl.overlaps[backup][k] = calculate_overlap(ctrl.strs[best_i], ctrl.strs[k]);
+      }
+    }
+    
+    // recompute the column of best_i
+    #pragma omp parallel for schedule(dynamic)
+    for (uint32_t k = 0; k < ctrl.ws_size; k++) {
+      ctrl.overlaps[k][best_i] = calculate_overlap(ctrl.strs[k], ctrl.strs[best_i]);
+    }
+
+    //remove best_j column
+    #pragma omp parallel for schedule(static)
+    for (uint32_t k = 0; k  < ctrl.overlaps.size(); k++) {
+      ctrl.overlaps[k].erase(ctrl.overlaps[k].begin() + best_j);
+    }
+
+    // if best_j belongs to the working set remove row
+    if ((best_j >= ctrl.ws_start) && (best_j < ctrl.ws_end))
+      ctrl.overlaps.erase(ctrl.overlaps.begin() + best_j);
+
+    std::cout << "sz " << ctrl.ws_size << "start "<< ctrl.ws_start << "end " << ctrl.ws_end << std::endl;
+    if (best_j  < ctrl.ws_start)
+      ctrl.ws_start--;
+    if (best_j  < ctrl.ws_end)
+      ctrl.ws_end--;
+
+    ctrl.ws_size = ctrl.ws_end - ctrl.ws_start;
+    std::cout << "sz " << ctrl.ws_size << "start "<< ctrl.ws_start << "end " << ctrl.ws_end << std::endl;
+
+    ctrl.strs.erase(ctrl.strs.begin() + best_j);
+  }
+
+  return ctrl.strs.front();
 }

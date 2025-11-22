@@ -27,42 +27,28 @@ calculate_overlap (std::string a, std::string b)
   return p.back ();
 }
 
-
-std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t> >
-compute_overlap_matrix (std::unordered_map<uint32_t, std::string> &strs,
-                        std::set<uint32_t> working_set)
+std::vector<std::vector<uint32_t>>
+compute_overlap_matrix (std::vector<std::string> strs)
 {
   double start, end;
-  std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t> > overlap;
+  std::vector<std::vector<uint32_t>> overlap(ctrl.ws_size, std::vector<uint32_t>(strs.size()));
 
-  /* Make array out of set to allow parallelization since
-   * its not possible to use parralel for primitve with
-   * iterators that are not random-acess like the set
-   */
-  std::vector<uint32_t> working_set_vector (working_set.begin (),
-                                            working_set.end ());
-
-  std::cout << "entering loop" << std::endl;
-  start = omp_get_wtime ();
-//#pragma omp parallel for schedule(dynamic)
-  for (auto i = working_set_vector.begin (); i < working_set_vector.end ();
-       i++)
+  start = omp_get_wtime();
+  #pragma omp parallel for schedule(dynamic)
+  for (uint32_t i = 0; i < ctrl.ws_size; i++)
     {
-      overlap[*i] = std::unordered_map<uint32_t, uint32_t> ();
-      for (uint32_t j = 0; j < strs.size (); j++)
+      for (uint32_t j = 0; j < strs.size(); j++)
         {
-          if (*i == j)
-            overlap[*i][j] = strs[*i].size ();
+          if ((ctrl.ws_start + i) == j)
+            overlap[i][j] = strs[ctrl.ws_start + i].size();
           else {
-            overlap[*i][j] = calculate_overlap (strs[*i], strs[j]);
-            std::cout << *i << " " << j << " " << strs[*i] << " " << strs[j] << " " << overlap[*i][j] <<  std::endl;
+            overlap[i][j] = calculate_overlap(strs[ctrl.ws_start + i], strs[j]);
           }
         }
+      std::cout << std::endl;
     }
-  end = omp_get_wtime ();
+  end = omp_get_wtime();
   ptotal += end - start;
 
   return overlap;
 }
-
-
