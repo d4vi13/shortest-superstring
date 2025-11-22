@@ -4,14 +4,14 @@ void
 find_max_overlap (uint32_t *pbest_i,
     uint32_t *pbest_j, uint32_t *pbest_ov)
 {
-  uint32_t best_i, best_j, best_ov;
+  uint32_t best_i = 0, best_j = 1, best_ov = 0;
   uint32_t n = ctrl.strs.size ();
 
   std::cout << "finding max overlap" << std::endl;
   if (ctrl.ws_size == 0) {
   std::cout << "ws is empty" << std::endl;
-    *pbest_i = -1;
-    *pbest_j = -1;
+    *pbest_i = 0;
+    *pbest_j = 1;
     *pbest_ov = 0;
     return;
   }
@@ -26,7 +26,7 @@ find_max_overlap (uint32_t *pbest_i,
     {
       if ((ctrl.ws_start + i) == j)
         continue;
-      if (ctrl.overlaps[i][j] > local_ov)
+      if (ctrl.overlaps[i][j] >= local_ov)
       {
         local_ov = ctrl.overlaps[i][j];
         local_i = i;
@@ -45,7 +45,7 @@ find_max_overlap (uint32_t *pbest_i,
     }
     else if (local_ov == best_ov)
     {
-      if (local_i < best_i)
+      if (local_i > best_i)
       {
         best_i = local_i;
         best_j = local_j;
@@ -53,7 +53,7 @@ find_max_overlap (uint32_t *pbest_i,
       }
       else if (local_i == best_i)
       {
-        if (local_j < best_j)
+        if (local_j > best_j)
         {
           best_j = local_j;
           best_i = local_i;
@@ -77,22 +77,29 @@ find_max_overlap_across_nodes (uint32_t *best_i,
 {
   uint32_t local_i = *best_i, local_j = *best_j, local_ov = *best_ov;
 
+  std::cout << "1\n";
   if (ctrl.ws_size)
     local_i += ctrl.ws_start;
 
+  std::cout << "2\n";
   MPI_Allreduce(&local_ov, best_ov, 1, MPI_UINT32_T, MPI_MAX, MPI_COMM_WORLD);
 
+  std::cout << "3\n";
   if (*best_ov != local_ov) {
-    local_i = -1;
+    local_i = 0;
   }
 
-  MPI_Allreduce(&local_i, best_i, 1, MPI_UINT32_T, MPI_MIN, MPI_COMM_WORLD);
+  std::cout << "4\n";
+  MPI_Allreduce(&local_i, best_i, 1, MPI_UINT32_T, MPI_MAX, MPI_COMM_WORLD);
 
+  std::cout << "5\n";
   if (*best_i != local_i) {
-    local_j = -1;
+    local_j = 0;
   }
 
-  MPI_Allreduce(&local_j, best_j, 1, MPI_UINT32_T, MPI_MIN, MPI_COMM_WORLD);
+  std::cout << "6\n";
+  MPI_Allreduce(&local_j, best_j, 1, MPI_UINT32_T, MPI_MAX, MPI_COMM_WORLD);
+  std::cout << "7\n";
 }
 
 /*
@@ -204,19 +211,24 @@ compute_shortest_superstring() {
       std:: cout << " best_ov " << best_ov << std::endl;
     }
 
+
+    std::cout << "finding consensus\n";
     uint32_t backup = best_i;
     find_max_overlap_across_nodes (&best_i, &best_j, &best_ov);
+      std:: cout << "best_i " << best_i << " best_j " << best_j << std::endl;
     if (true) {
       std:: cout << "best_i " << best_i << " " << ctrl.strs[best_i];
       std:: cout << " best_j " << best_j <<  " " << ctrl.strs[best_j];
       std:: cout << " best_ov " << best_ov << std::endl;
     }
 
+    std::cout << "computing new string\n";
     // check if this thread won and set won to true
     won = (backup + ctrl.ws_start) == best_i;
 
     ctrl.strs[best_i] = ctrl.strs[best_i] + ctrl.strs[best_j].substr(best_ov);
 
+    std::cout << "recomputing\n";
     // recompute the line if it belongs to the working set
     if (won) {
     #pragma omp parallel for schedule(dynamic)
@@ -226,22 +238,27 @@ compute_shortest_superstring() {
       }
     }
     
+    std::cout << "recomputing 2\n";
     // recompute the column of best_i
     #pragma omp parallel for schedule(dynamic)
     for (uint32_t k = 0; k < ctrl.ws_size; k++) {
-      ctrl.overlaps[k][best_i] = calculate_overlap(ctrl.strs[k], ctrl.strs[best_i]);
+      ctrl.overlaps[k][best_i] = calculate_overlap(ctrl.strs[ctrl.ws_start + k], ctrl.strs[best_i]);
     }
 
+    std::cout << "deleting column\n";
     //remove best_j column
     #pragma omp parallel for schedule(static)
     for (uint32_t k = 0; k  < ctrl.overlaps.size(); k++) {
       ctrl.overlaps[k].erase(ctrl.overlaps[k].begin() + best_j);
     }
 
+    std::cout << "deleting row\n";
     // if best_j belongs to the working set remove row
     if ((best_j >= ctrl.ws_start) && (best_j < ctrl.ws_end))
-      ctrl.overlaps.erase(ctrl.overlaps.begin() + best_j);
+      ctrl.overlaps.erase(ctrl.overlaps.begin() + (best_j - ctrl.ws_start));
 
+    std::cout << "fixing ws\n";
+    // if best_j belongs to the working set remove row
     std::cout << "sz " << ctrl.ws_size << "start "<< ctrl.ws_start << "end " << ctrl.ws_end << std::endl;
     if (best_j  < ctrl.ws_start)
       ctrl.ws_start--;
