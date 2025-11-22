@@ -176,7 +176,7 @@ main (int argc, char **argv)
   
   for (auto i = 0; i < ctrl.ws_size; i++)
   {
-    for (uint32_t j = 0; j  < ctrl.strs.size(); j++)
+    for (int32_t j = 0; j  < ctrl.strs.size(); j++)
       std::cout << ctrl.overlaps[i][j] << " ";
     std::cout << std::endl;
   }

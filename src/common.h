@@ -37,8 +37,7 @@ struct ctrl
   int ws_size;
   std::vector<std::string> strs;
 
-  std::set<uint32_t> working_set;
-  std::vector<std::vector<uint32_t>> overlaps;
+  std::vector<std::vector<int32_t>> overlaps;
   MPI_Status status;
 };
 
