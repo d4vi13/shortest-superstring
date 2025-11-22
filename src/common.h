@@ -14,6 +14,7 @@
 // Data structures
 
 #include <map>
+#include <unordered_map>
 #include <queue>
 #include <set>
 #include <string>
@@ -32,7 +33,8 @@ struct ctrl
   int cluster_size;
   int working_set_size;
   std::set<uint32_t> working_set;
-  std::vector<std::string> strs;
+  std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>> overlaps;
+  std::unordered_map<uint32_t, std::string> strs;
   MPI_Status status;
 };
 

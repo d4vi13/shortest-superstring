@@ -8,7 +8,7 @@ struct ctrl ctrl;
 uint32_t size;
 
 void
-load_strings (std::istream &in, std::vector<std::string> &strs)
+load_strings (std::istream &in, std::unordered_map<uint32_t, std::string> &strs)
 {
   uint32_t i;
   std::string aux;
@@ -21,7 +21,7 @@ load_strings (std::istream &in, std::vector<std::string> &strs)
       getline (in, aux);
       if (aux.empty ())
         break;
-      strs.push_back (aux);
+      strs[size - i] = aux;
     }
 
   return;
@@ -84,7 +84,7 @@ get_working_set ()
       for (int i = 0; i < ctrl.cluster_size; i++)
         {
           if ((end + working_set_min_size * threads[i])
-              > ctrl.strs.size () - leftover)
+              > (int)(ctrl.strs.size () - leftover))
             end = ctrl.strs.size () - leftover;
           else
             end += working_set_min_size * threads[i];
@@ -163,7 +163,7 @@ main (int argc, char **argv)
   return 0;
 
   start = omp_get_wtime ();
-  auto overlaps = compute_overlap_matrix (ctrl.strs, ctrl.working_set);
+  ctrl.overlaps = compute_overlap_matrix (ctrl.strs, ctrl.working_set);
 //  res = compute_shortest_superstring (ctrl.strs, overlaps);
   end = omp_get_wtime ();
 

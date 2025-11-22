@@ -27,12 +27,12 @@ calculate_overlap (std::string a, std::string b)
   return p.back ();
 }
 
-std::map<uint32_t, std::map<uint32_t, uint32_t> >
-compute_overlap_matrix (std::vector<std::string> strs,
+std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t> >
+compute_overlap_matrix (std::unordered_map<uint32_t, std::string> &strs,
                         std::set<uint32_t> working_set)
 {
   double start, end;
-  std::map<uint32_t, std::map<uint32_t, uint32_t> > overlap;
+  std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t> > overlap;
 
   /* Make array out of set to allow parallelization since
    * its not possible to use parralel for primitve with
@@ -46,7 +46,7 @@ compute_overlap_matrix (std::vector<std::string> strs,
   for (auto i = working_set_vector.begin (); i < working_set_vector.end ();
        i++)
     {
-      overlap[*i] = std::map<uint32_t, uint32_t> ();
+      overlap[*i] = std::unordered_map<uint32_t, uint32_t> ();
       for (uint32_t j = 0; j < strs.size (); j++)
         {
           if (*i == j)
