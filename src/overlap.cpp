@@ -27,6 +27,7 @@ calculate_overlap (std::string a, std::string b)
   return p.back ();
 }
 
+
 std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t> >
 compute_overlap_matrix (std::unordered_map<uint32_t, std::string> &strs,
                         std::set<uint32_t> working_set)
@@ -41,8 +42,9 @@ compute_overlap_matrix (std::unordered_map<uint32_t, std::string> &strs,
   std::vector<uint32_t> working_set_vector (working_set.begin (),
                                             working_set.end ());
 
+  std::cout << "entering loop" << std::endl;
   start = omp_get_wtime ();
-#pragma omp parallel for schedule(dynamic)
+//#pragma omp parallel for schedule(dynamic)
   for (auto i = working_set_vector.begin (); i < working_set_vector.end ();
        i++)
     {
@@ -51,8 +53,10 @@ compute_overlap_matrix (std::unordered_map<uint32_t, std::string> &strs,
         {
           if (*i == j)
             overlap[*i][j] = strs[*i].size ();
-          else
+          else {
             overlap[*i][j] = calculate_overlap (strs[*i], strs[j]);
+            std::cout << *i << " " << j << " " << strs[*i] << " " << strs[j] << " " << overlap[*i][j] <<  std::endl;
+          }
         }
     }
   end = omp_get_wtime ();
@@ -60,3 +64,5 @@ compute_overlap_matrix (std::unordered_map<uint32_t, std::string> &strs,
 
   return overlap;
 }
+
+

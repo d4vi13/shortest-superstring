@@ -10,7 +10,7 @@ uint32_t size;
 void
 load_strings (std::istream &in, std::unordered_map<uint32_t, std::string> &strs)
 {
-  uint32_t i;
+  uint32_t i, j = 0;
   std::string aux;
   getline (in, aux);
 
@@ -21,7 +21,7 @@ load_strings (std::istream &in, std::unordered_map<uint32_t, std::string> &strs)
       getline (in, aux);
       if (aux.empty ())
         break;
-      strs[size - i] = aux;
+      strs[j++] = aux;
     }
 
   return;
@@ -79,13 +79,23 @@ get_working_set ()
       for (int i = 0; i < (working_set_min_size * threads[0] + leftover); i++)
         ctrl.working_set.insert (i);
 
+      if (!working_set_min_size)
+        {
+          int value = 0;
+          for (int r = 1; r < ctrl.cluster_size; r++) {
+            MPI_Send(&value, 1, MPI_INT, r, 0, MPI_COMM_WORLD);
+            MPI_Send(&value, 1, MPI_INT, r, 0, MPI_COMM_WORLD);
+          }
+          return 1;
+        }
+
       start = working_set_min_size * threads[0] + leftover;
       end = start;
-      for (int i = 0; i < ctrl.cluster_size; i++)
+      for (int i = 1; i < ctrl.cluster_size; i++)
         {
           if ((end + working_set_min_size * threads[i])
-              > (int)(ctrl.strs.size () - leftover))
-            end = ctrl.strs.size () - leftover;
+              > (int)(ctrl.strs.size ()))
+            end = ctrl.strs.size();
           else
             end += working_set_min_size * threads[i];
           MPI_Send (&start, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
@@ -150,20 +160,32 @@ main (int argc, char **argv)
     }
 
   std::cout << "Working Set Size: " << ctrl.working_set.size () << std::endl;
-  /*
+ /* 
   for (auto it = ctrl.working_set.begin (); it != ctrl.working_set.end ();
        it++)
     {
-      std::cout << *it << " ";
+      std::cout << *it << "("<< ctrl.strs[*it] << ") ";
     }
-  std::cout << std::endl;
-   */
+    */
 
-  start = omp_get_wtime ();
+start = omp_get_wtime ();
+  std::cout << "Starting to compute overlap matrix" << std::endl;
   ctrl.overlaps = compute_overlap_matrix (ctrl.strs, ctrl.working_set);
+
+  for (auto it = ctrl.working_set.begin(); it != ctrl.working_set.end(); it ++)
+  {
+    for (uint32_t j = 0; j  < ctrl.strs.size(); j++)
+      std::cout << ctrl.overlaps[*it][j] << " ";
+    std::cout << std::endl;
+  }
+  std::cout << std::endl;
+  std::cout << "----------" << std::endl;
+ 
+ 
+    std::cout << "Starting to compute shortest superstring" << std::endl;
   res = compute_shortest_superstring (ctrl.strs, ctrl.overlaps);
   if (res.empty())
-    return 0;
+    goto finish;
 
   end = omp_get_wtime ();
 
@@ -175,6 +197,7 @@ main (int argc, char **argv)
   std::cout << size << "," << total << "," << total - ptotal << "," << ptotal
             << std::endl;
 
+finish:
   MPI_Finalize ();
   return 0;
 }

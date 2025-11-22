@@ -1,11 +1,20 @@
 #include "shsup.h"
 
 void
-find_max_overlap (std::vector<uint32_t> &ws, uint32_t &best_i,
-    uint32_t &best_j, uint32_t &best_ov)
+find_max_overlap (std::vector<uint32_t> &ws, uint32_t *pbest_i,
+    uint32_t *pbest_j, uint32_t *pbest_ov)
 {
-
+  uint32_t best_i, best_j, best_ov;
   uint32_t n = ctrl.strs.size ();
+
+  std::cout << "finding max overlap" << std::endl;
+  if (ws.empty()) {
+  std::cout << "ws is empty" << std::endl;
+    *pbest_i = -1;
+    *pbest_j = -1;
+    *pbest_ov = 0;
+    return;
+  }
 
 #pragma omp parallel 
   { 
@@ -55,29 +64,30 @@ find_max_overlap (std::vector<uint32_t> &ws, uint32_t &best_i,
     }
   }
 }
+  *pbest_i = best_i;
+  *pbest_j = best_j;
+  *pbest_ov = best_ov;
 }
 
 void
-find_max_overlap_across_nodes (uint32_t &best_i,
-                  uint32_t &best_j, uint32_t &best_ov)
+find_max_overlap_across_nodes (uint32_t *best_i,
+                  uint32_t *best_j, uint32_t *best_ov)
 {
-  uint32_t local_i = best_i, local_j = best_j, local_ov = best_ov;
+  uint32_t local_i = *best_i, local_j = *best_j, local_ov = *best_ov;
 
-  MPI_Allreduce(&local_ov, &best_ov, 1, MPI_UINT32_T, MPI_MAX, MPI_COMM_WORLD);
+  MPI_Allreduce(&local_ov, best_ov, 1, MPI_UINT32_T, MPI_MAX, MPI_COMM_WORLD);
 
-  if (best_ov != local_ov) {
+  if (*best_ov != local_ov) {
     local_i = -1;
+  }
+
+  MPI_Allreduce(&local_i, best_i, 1, MPI_UINT32_T, MPI_MIN, MPI_COMM_WORLD);
+
+  if (*best_i != local_i) {
     local_j = -1;
   }
 
-  MPI_Allreduce(&local_i, &best_i, 1, MPI_UINT32_T, MPI_MIN, MPI_COMM_WORLD);
-
-  if (best_i != local_i) {
-    local_i = -1;
-    local_j = -1;
-  }
-
-  MPI_Allreduce(&local_j, &best_j, 1, MPI_UINT32_T, MPI_MIN, MPI_COMM_WORLD);
+  MPI_Allreduce(&local_j, best_j, 1, MPI_UINT32_T, MPI_MIN, MPI_COMM_WORLD);
 }
 
 
@@ -90,7 +100,7 @@ compute_shortest_superstring (
   bool won;
   std::vector<uint32_t> ws (ctrl.working_set.begin (), ctrl.working_set.end ());
 
-  while (strs.size () > 1 && ws.size()) // think about how to stop
+  while (strs.size () > 1) // think about how to stop
     {
       won = false;
       best_i = 0, best_j = 1, best_ov = 0;
@@ -98,10 +108,19 @@ compute_shortest_superstring (
       start = omp_get_wtime ();
 
       // find maximum of local matrix using openmp
-      find_max_overlap (ws, best_i, best_j, best_ov);
+      find_max_overlap (ws, &best_i, &best_j, &best_ov);
+      std:: cout << "best_i " << best_i << " " << ctrl.strs[best_i] ;
+      std:: cout << " best_j " << best_j <<  " " << ctrl.strs[best_j] ;
+      std:: cout << " best_ov " << best_ov << std::endl;
 
       uint32_t backup = best_i;
-      find_max_overlap_across_nodes (best_i, best_j, best_ov);
+      find_max_overlap_across_nodes (&best_i, &best_j, &best_ov);
+
+      if (!ctrl.rank) {
+        std:: cout << "best_i " << best_i << " " << ctrl.strs[best_i] <<  std::endl;
+        std:: cout << "best_j " << best_j <<  " " << ctrl.strs[best_j] << std::endl;
+        std:: cout << "best_ov " << best_ov << std::endl;
+      }
 
       // check if this thread won and set won to true
       if (backup == best_i) 
