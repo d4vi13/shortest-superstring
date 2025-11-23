@@ -16,6 +16,9 @@ all: $(TARGET)
 $(TARGET): $(SRC)
 	$(CC) $(CFLAGS) $(SRC) -o $(TARGET)
 
+hosts: $(SRC)
+	$(CC) $(CFLAGS) -DUSE_HOSTFILE $(SRC) -o $(TARGET)
+
 run: $(TARGET)
 	srun --label --mpi=pmix -N 5 ./$(TARGET) $(TEST)
 

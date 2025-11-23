@@ -1,5 +1,1 @@
-gojo threads=8
-megumi threads=4
-roteador threads=2
-bocchi threads=4
-melchior threads=12
+megumi threads=1

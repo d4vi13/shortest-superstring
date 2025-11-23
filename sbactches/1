@@ -1,0 +1,17 @@
+#!/bin/bash
+#SBATCH --job-name=shsup1
+#SBATCH --output=1.csv
+#SBATCH --nodes=1
+#SBATCH --nodelist=megumi
+
+files=("tests/10k" "tests/5k" "tests/2.5k" "tests/1.25k")
+
+touch 1.csv
+echo "tam,threads,total,sequencial,paralelo" > 1.csv 
+
+for file in "${files[@]}"; do
+    for i in {1..5}; do
+      srun -n 1 --mpi=pmix ./shsup "$file" hosts.txt 
+  done
+done 
+

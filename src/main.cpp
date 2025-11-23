@@ -35,7 +35,6 @@ get_num_of_threads(const char *base_cmd, const char *arg)
     FILE *script;
     char thread_num_str[16];
 
-    // build: "<base_cmd> <arg>"
     snprintf(cmd, sizeof(cmd), "%s %s", base_cmd, arg);
 
     script = popen(cmd, "r");
@@ -139,10 +138,18 @@ main (int argc, char **argv)
 
   MPI_Comm_rank (MPI_COMM_WORLD, &ctrl.rank);
   MPI_Comm_size (MPI_COMM_WORLD, &ctrl.cluster_size);
+
+#ifndef USE_HOSTFILE
   if (!(ctrl.nproc = omp_get_num_procs())) 
     {
       return 0;
     }
+#else
+  if (!(ctrl.nproc = get_num_of_threads(GET_THREAD_NUM_SCRIPT, argv[2]))) 
+    {
+      return 0;
+    }
+#endif
 
   if (argc >= 2)
     {

@@ -1,33 +1,25 @@
 import pandas as pd
 
-threads = [16, 8, 4, 2, 1]
-n_t = 0
+def process_multiple_csv(inputs, output_file, value_columns):
+    df = pd.concat([pd.read_csv(path) for path in inputs], ignore_index=True)
 
-columns = ["tam", "threads", "media_tempo", "dp_tempo", "media_sequencial", "dp_sequencial", "media_paralelo", "dp_paralelo"]
-res = pd.DataFrame(columns=columns)
+    grouped = df.groupby(['tam', 'threads'])[value_columns].agg(['mean', 'std'])
 
-df = pd.read_csv("result")
+    grouped.columns = [f"{col}_{stat}" for col, stat in grouped.columns]
 
-for start in range(0, len(df), 20):
-    end = start + 20
-    block = df.iloc[start:end]
+    grouped.reset_index().to_csv(output_file, index=False)
 
-    new_row = [
-            block["tam"].iloc[0],
-            threads[n_t],
-            block["total"].mean(),
-            block["total"].std(),
-            block["sequencial"].mean(),
-            block["sequencial"].std(),
-            block["paralelo"].mean(),
-            block["paralelo"].std()
-            ]
 
-    new_row = pd.DataFrame([new_row], columns=columns)
-    res = pd.concat([res, new_row], ignore_index=True)
+if __name__ == "__main__":
+    input_files = [
+        "results/1.csv",
+        "results/4.csv",
+        "results/8.csv",
+        "results/16.csv",
+        "results/28.csv",
+    ]
 
-    n_t = (n_t + 1) % len(threads)
+    metrics = ["total", "sequencial", "paralelo"]
 
-res.to_csv("processed_result.csv", index=False)
-
+    process_multiple_csv(input_files, "processed_results.csv", metrics)
 
