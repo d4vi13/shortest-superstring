@@ -1,0 +1,17 @@
+#!/bin/bash
+#SBATCH --job-name=shsup8
+#SBATCH --output=8.csv
+#SBATCH --nodes=2
+#SBATCH --nodelist=bocchi,megumi
+
+files=("tests/10k" "tests/5k" "tests/2.5k" "tests/1.25k")
+
+touch 8.csv
+echo "tam,threads,total,sequencial,paralelo" > 8.csv 
+
+for file in "${files[@]}"; do
+    for i in {1..5}; do
+      srun -n 2 --mpi=pmix ./shsup "$file" 
+  done
+done 
+

@@ -1,11 +1,12 @@
 #include "common.h"
 #include "overlap.h"
 #include "shsup.h"
-#define GET_THREAD_NUM_SCRIPT "./get_num_of_threads.pl hosts.txt"
+#define GET_THREAD_NUM_SCRIPT "./get_num_of_threads.pl"
 
-double ptotal = 0;
+double stotal = 0;
 struct ctrl ctrl;
 uint32_t size;
+uint32_t threads_total;
 
 void
 load_strings (std::istream &in, std::vector<std::string> &strs)
@@ -28,27 +29,31 @@ load_strings (std::istream &in, std::vector<std::string> &strs)
 }
 
 int
-get_num_of_threads ()
+get_num_of_threads(const char *base_cmd, const char *arg)
 {
-  FILE *script;
-  char thread_num_str[16];
+    char cmd[256];
+    FILE *script;
+    char thread_num_str[16];
 
-  if (!(script = popen (GET_THREAD_NUM_SCRIPT, "r")))
-    {
-      std::cerr << "failed to get number of threas\n";
-      return 0;
+    // build: "<base_cmd> <arg>"
+    snprintf(cmd, sizeof(cmd), "%s %s", base_cmd, arg);
+
+    script = popen(cmd, "r");
+    if (!script) {
+        std::cerr << "failed to execute command\n";
+        return 0;
     }
 
-  if (!fgets (thread_num_str, 16, script))
-    {
-      std::cerr << "failed to read scritp result\n";
-      return 0;
+    if (!fgets(thread_num_str, sizeof(thread_num_str), script)) {
+        std::cerr << "failed to read command output\n";
+        pclose(script);
+        return 0;
     }
 
-  pclose (script);
-
-  return atoi (thread_num_str);
+    pclose(script);
+    return atoi(thread_num_str);
 }
+
 
 int
 get_working_set ()
@@ -71,6 +76,8 @@ get_working_set ()
                     &ctrl.status);
           total += threads[i];
         }
+
+      threads_total = total; // save to print later
 
       working_set_min_size = ctrl.strs.size () / total;
       leftover = ctrl.strs.size () % total;
@@ -132,7 +139,7 @@ main (int argc, char **argv)
 
   MPI_Comm_rank (MPI_COMM_WORLD, &ctrl.rank);
   MPI_Comm_size (MPI_COMM_WORLD, &ctrl.cluster_size);
-  if (!(ctrl.nproc = get_num_of_threads ()))
+  if (!(ctrl.nproc = omp_get_num_procs())) 
     {
       return 0;
     }
@@ -148,25 +155,29 @@ main (int argc, char **argv)
 
   load_strings (*in, ctrl.strs);
 
+  start = omp_get_wtime ();
+
+  double s = omp_get_wtime ();
   if (!get_working_set ())
     {
       std::cerr << "Failed to get working set\n";
       return 0;
     }
 
-  start = omp_get_wtime ();
-  ctrl.overlaps = compute_overlap_matrix (ctrl.strs);
+  double e = omp_get_wtime ();
+  stotal += e - s;
 
+  ctrl.overlaps = compute_overlap_matrix (ctrl.strs);
   res = compute_shortest_superstring ();
  
   end = omp_get_wtime ();
 
   total = end - start;
 
-
-  std::cout << "Resposta: " << res << std::endl;
-  std::cout << "Tamanho: " << res.size () << std::endl;
-  std::cout << size << "," << total << "," << total - ptotal << "," << ptotal
+//std::cout << res << std::endl;
+//std::cout << res.size() << std::endl;
+  if (ctrl.rank == 0)
+    std::cout << size << "," << threads_total <<"," << total << "," << stotal << "," << total - stotal
             << std::endl;
 
 finish:

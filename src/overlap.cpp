@@ -30,10 +30,8 @@ calculate_overlap (std::string &a, std::string &b)
 std::vector<std::vector<int32_t>>
 compute_overlap_matrix (std::vector<std::string> strs)
 {
-  double start, end;
   std::vector<std::vector<int32_t>> overlap(ctrl.ws_size, std::vector<int32_t>(strs.size()));
 
-  start = omp_get_wtime();
   #pragma omp parallel for schedule(dynamic)
   for (int32_t i = 0; i < ctrl.ws_size; i++)
     {
@@ -46,8 +44,6 @@ compute_overlap_matrix (std::vector<std::string> strs)
           }
         }
     }
-  end = omp_get_wtime();
-  ptotal += end - start;
 
   return overlap;
 }

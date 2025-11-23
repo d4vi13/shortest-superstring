@@ -77,8 +77,9 @@ find_max_overlap_across_nodes (int32_t *best_i,
 std::string
 compute_shortest_superstring()
 {
+  double start, end;
   while (ctrl.strs.size() > 1) {
-    const int32_t n = static_cast<int32_t>(ctrl.strs.size());
+    int32_t n = ctrl.strs.size();
     int32_t best_i = -1, best_j = -1, best_ov = -1;
 
     // find best overlap within this node (returns absolute indices)
@@ -87,8 +88,11 @@ compute_shortest_superstring()
     // keep a local copy to know if this rank won after consensus
     int32_t backup = best_i;
 
+    start = omp_get_wtime();
     // consensus across MPI ranks 
     find_max_overlap_across_nodes(&best_i, &best_j, &best_ov);
+    end = omp_get_wtime();
+    stotal += end - start;
 
     // determine whether this rank is responsible for recomputing the row
     bool won = (backup == best_i);

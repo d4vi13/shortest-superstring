@@ -41,7 +41,7 @@ struct ctrl
   MPI_Status status;
 };
 
-extern double ptotal;
+extern double stotal;
 extern struct ctrl ctrl;
 
 #endif
