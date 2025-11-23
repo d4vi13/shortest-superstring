@@ -70,7 +70,6 @@ get_working_set ()
           MPI_Recv (&threads[i], 1, MPI_INT, i, MPI_ANY_TAG, MPI_COMM_WORLD,
                     &ctrl.status);
           total += threads[i];
-          std::cout << "rank " << i << "threads " << threads[i] << std::endl;
         }
 
       working_set_min_size = ctrl.strs.size () / total;
@@ -138,9 +137,6 @@ main (int argc, char **argv)
       return 0;
     }
 
-  std::cout << "Rank: " << ctrl.rank << std::endl;
-  std::cout << "Number of Threads: " << ctrl.nproc << std::endl;
-
   if (argc >= 2)
     {
       file.open (argv[1]);
@@ -150,10 +146,7 @@ main (int argc, char **argv)
       in = &file;
     }
 
-  
-  std::cout << "Loading strings..." << std::endl;
   load_strings (*in, ctrl.strs);
-  std::cout << "Number of strings loaded" << ctrl.strs.size () << std::endl;
 
   if (!get_working_set ())
     {
@@ -161,32 +154,9 @@ main (int argc, char **argv)
       return 0;
     }
 
-  std::cout << "Working Set Size: " << ctrl.ws_size << "End: " << ctrl.ws_end <<std::endl;
-  
-  /*
-  for (auto i = 0; i < ctrl.ws_size; i++)
-    std::cout << ctrl.ws_start + i << "("<< ctrl.strs[ctrl.ws_start + i] << ") ";
-  std::cout << std::endl;
-  */
- 
   start = omp_get_wtime ();
-  std::cout << "Starting to compute overlap matrix" << std::endl;
   ctrl.overlaps = compute_overlap_matrix (ctrl.strs);
 
-  
-  for (auto i = 0; i < ctrl.ws_size; i++)
-  {
-    for (int32_t j = 0; j  < ctrl.strs.size(); j++)
-      std::cout << ctrl.overlaps[i][j] << " ";
-    std::cout << std::endl;
-  }
-  std::cout << std::endl;
-  std::cout << "----------" << std::endl;
- 
- 
-  
-
-  std::cout << "Starting to compute shortest superstring" << std::endl;
   res = compute_shortest_superstring ();
  
   end = omp_get_wtime ();
@@ -195,7 +165,7 @@ main (int argc, char **argv)
 
 
   std::cout << "Resposta: " << res << std::endl;
-  std::cout << "Tamnho: " << res.size () << std::endl;
+  std::cout << "Tamanho: " << res.size () << std::endl;
   std::cout << size << "," << total << "," << total - ptotal << "," << ptotal
             << std::endl;
 

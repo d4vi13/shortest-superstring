@@ -45,7 +45,6 @@ compute_overlap_matrix (std::vector<std::string> strs)
             overlap[i][j] = calculate_overlap(strs[ctrl.ws_start + i], strs[j]);
           }
         }
-      std::cout << std::endl;
     }
   end = omp_get_wtime();
   ptotal += end - start;
