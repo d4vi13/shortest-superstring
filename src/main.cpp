@@ -134,11 +134,6 @@ main (int argc, char **argv)
   double start, end, total;
   std::string res;
 
-  MPI_Init (&argc, &argv);
-
-  MPI_Comm_rank (MPI_COMM_WORLD, &ctrl.rank);
-  MPI_Comm_size (MPI_COMM_WORLD, &ctrl.cluster_size);
-
 #ifndef USE_HOSTFILE
   if (!(ctrl.nproc = omp_get_num_procs())) 
     {
@@ -150,6 +145,14 @@ main (int argc, char **argv)
       return 0;
     }
 #endif
+
+  omp_set_num_threads(ctrl.nproc);
+
+  MPI_Init (&argc, &argv);
+
+  MPI_Comm_rank (MPI_COMM_WORLD, &ctrl.rank);
+  MPI_Comm_size (MPI_COMM_WORLD, &ctrl.cluster_size);
+
 
   if (argc >= 2)
     {
@@ -181,8 +184,8 @@ main (int argc, char **argv)
 
   total = end - start;
 
-//std::cout << res << std::endl;
-//std::cout << res.size() << std::endl;
+  std::cout << res << std::endl;
+  std::cout << res.size() << std::endl;
   if (ctrl.rank == 0)
     std::cout << size << "," << threads_total <<"," << total << "," << stotal << "," << total - stotal
             << std::endl;

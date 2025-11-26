@@ -21,19 +21,19 @@ find_max_overlap (int32_t *pbest_i,
     int32_t local_ov = -1;
 
     #pragma omp for nowait
-    for (int32_t row = 0; row < ctrl.ws_size; ++row) {
+    for (int32_t i = 0; i < ctrl.ws_size; i++) {
 
-      int32_t row_abs = ctrl.ws_start + row;
+      int32_t row_abs = ctrl.ws_start + i;
 
-      for (int32_t col = 0; col < n; ++col) {
-        if (row_abs == col) continue;
+      for (int32_t j = 0; j < n; j++) {
+        if (row_abs == j) continue;
 
-        int32_t ov = ctrl.overlaps[row][col];
+        int32_t ov = ctrl.overlaps[i][j];
         if (ov > local_ov)
         {
           local_ov = ov;
           local_i = row_abs;
-          local_j = col;
+          local_j = j;
         }
       }
     } 
@@ -98,21 +98,21 @@ compute_shortest_superstring()
       int32_t row_idx = best_i - ctrl.ws_start;
       if (row_idx >= 0 && row_idx < ctrl.ws_size) {
         #pragma omp parallel for schedule(dynamic)
-        for (int32_t k = 0; k < n; ++k) {
-          if (k == best_i) continue;
-          ctrl.overlaps[row_idx][k] = calculate_overlap(ctrl.strs[best_i], ctrl.strs[k]);
+        for (int32_t i = 0; i < n; i++) {
+          if (i == best_i) continue;
+          ctrl.overlaps[row_idx][i] = calculate_overlap(ctrl.strs[best_i], ctrl.strs[i]);
         }
       }
     }
 
     #pragma omp parallel for schedule(dynamic)
-    for (int32_t r = 0; r < ctrl.ws_size; ++r) {
-      ctrl.overlaps[r][best_i] = calculate_overlap(ctrl.strs[ctrl.ws_start + r], ctrl.strs[best_i]);
+    for (int32_t i = 0; i < ctrl.ws_size; i++) {
+      ctrl.overlaps[i][best_i] = calculate_overlap(ctrl.strs[ctrl.ws_start + i], ctrl.strs[best_i]);
     }
 
     #pragma omp parallel for schedule(static)
-    for (int32_t r = 0; r < ctrl.ws_size; ++r) {
-        ctrl.overlaps[r].erase(ctrl.overlaps[r].begin() + best_j);
+    for (int32_t i = 0; i < ctrl.ws_size; i++) {
+        ctrl.overlaps[i].erase(ctrl.overlaps[i].begin() + best_j);
     }
 
     if (best_j >= ctrl.ws_start && best_j < ctrl.ws_end) {
@@ -124,7 +124,7 @@ compute_shortest_superstring()
 
     ctrl.ws_size = ctrl.ws_end - ctrl.ws_start;
 
-      ctrl.strs.erase(ctrl.strs.begin() + best_j);
+    ctrl.strs.erase(ctrl.strs.begin() + best_j);
   } 
 
   return ctrl.strs.front();
